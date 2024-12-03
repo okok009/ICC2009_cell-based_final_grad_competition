@@ -111,6 +111,7 @@ parameter signed [5 -1:0] coef_3_3 = 5'b11000;
 parameter signed [9 -1:0] divisor_pos  = 9'b010100101;
 parameter signed [9 -1:0] divisor_neg  = 9'b101011011;
 
+wire signed [`BW -1:0] yuv_out_nxt;
 wire signed [`RGB2YUV_BW -1:0] y_r_g_nxt;
 wire signed [`RGB2YUV_BW -1:0] y_b_nxt;
 wire signed [`RGB2YUV_BW -1:0] y_nxt;
@@ -119,9 +120,9 @@ wire signed [`RGB2YUV_BW -1:0] u_b_nxt;
 wire signed [`RGB2YUV_BW -1:0] u_nxt;
 wire signed [`RGB2YUV_BW -1:0] v_nxt;
 wire signed [9 -1:0] divisor;
+wire signed [`RGB2YUV_BW -1:0] yuv_aft; // aft: after diverse
 
-reg signed [`RGB2YUV_BW -1:0] yuv_aft; // aft: after diverse
-reg signed [`RGB2YUV_BW -1:0] yuv_reg;
+reg signed [`BW -1:0] yuv_out_reg;
 reg [1:0] cnt_rgb2yuv;
 reg out_valid_reg_2;
 reg busy_reg_2;
@@ -135,44 +136,48 @@ assign u_r_g_nxt = coef_2_1 * $signed({1'b0, rgb_in[23 :16]}) + coef_2_2 * $sign
 assign u_b_nxt = coef_2_3 * $signed({1'b0, rgb_in[7 :0]});
 assign u_nxt = (u_r_g_nxt + u_b_nxt)<<<1;
 assign v_nxt = ((coef_3_1 * $signed({1'b0, rgb_in_reg[23 :16]}) + coef_3_2 * $signed({1'b0, rgb_in_reg[15 :8]})) + coef_3_3 * $signed({1'b0, rgb_in_reg[7 :0]}))<<<1;
-
+assign yuv_aft = (cnt_rgb2yuv == 2'b00) ? u_nxt :
+                 (cnt_rgb2yuv == 2'b01) ? y_nxt :
+                 (cnt_rgb2yuv == 2'b10) ? v_nxt :
+                 (cnt_rgb2yuv == 2'b11) ? y_nxt : `RGB2YUV_BW'bx;
 assign divisor = (yuv_aft[`RGB2YUV_BW -1]) ? divisor_neg : divisor_pos;
-assign yuv_out = (yuv_aft + divisor) / (divisor_pos<<<1);
+assign yuv_out_nxt = (yuv_aft + divisor) / (divisor_pos<<<1);
+assign yuv_out = yuv_out_reg;
 assign out_valid = out_valid_reg || out_valid_reg_2;
 assign busy = busy_reg || busy_reg_2;
 
 always @(posedge clk or posedge reset) begin
     if (reset) begin
         cnt_rgb2yuv <= 0;
-        yuv_aft <= 0;
         busy_reg_2 <= 0;
         out_valid_reg_2 <= 0;
         rgb_in_reg <= 0;
+        yuv_out_reg <= 0;
     end
     else if (op_mode && in_en && cnt_rgb2yuv == 2'b00) begin
         rgb_in_reg <= rgb_in;
-        yuv_aft <= u_nxt;
         u_r_g_reg <= u_r_g_nxt;
         cnt_rgb2yuv <= cnt_rgb2yuv + 1;
         out_valid_reg_2 <= 1;
         busy_reg_2 <= 1;
+        yuv_out_reg <= yuv_out_nxt;
     end
     else if (op_mode && in_en && cnt_rgb2yuv == 2'b01) begin
-        yuv_aft <= y_nxt;
         cnt_rgb2yuv <= cnt_rgb2yuv + 1;
         busy_reg_2 <= 0;
+        yuv_out_reg <= yuv_out_nxt;
     end
     else if (op_mode && in_en && cnt_rgb2yuv == 2'b10) begin
         rgb_in_reg <= rgb_in;
         u_r_g_reg <= u_r_g_nxt;
-        yuv_aft <= v_nxt;
         cnt_rgb2yuv <= cnt_rgb2yuv + 1;
         busy_reg_2 <= 1;
+        yuv_out_reg <= yuv_out_nxt;
     end
     else if (op_mode && in_en && cnt_rgb2yuv == 2'b11) begin
-        yuv_aft <= y_nxt;
         cnt_rgb2yuv <= cnt_rgb2yuv + 1;
         busy_reg_2 <= 0;
+        yuv_out_reg <= yuv_out_nxt;
     end
 end
 
