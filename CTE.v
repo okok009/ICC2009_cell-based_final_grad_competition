@@ -44,12 +44,11 @@ assign r_result = r + y;
 assign g_result = g + y;
 assign b_result = b + y;
 assign rgb_out = {r_out, g_out, b_out};
-assign busy = busy_reg;
 
 // instance round
-round_bound_YUV2RGB R_ROUND_BOUND_YUV2RGB(.x(r_result), .out_x(r_out));
-round_bound_YUV2RGB G_ROUND_BOUND_YUV2RGB(.x(g_result), .out_x(g_out));
-round_bound_YUV2RGB B_ROUND_BOUND_YUV2RGB(.x(b_result), .out_x(b_out));
+round_bound R_ROUND_BOUND(.x(r_result), .out_x(r_out));
+round_bound G_ROUND_BOUND(.x(g_result), .out_x(g_out));
+round_bound B_ROUND_BOUND(.x(b_result), .out_x(b_out));
 
 // YUV2RGB_seq
 always @(posedge clk or posedge reset) begin
@@ -103,103 +102,88 @@ end
 // RGB2YUV
 // ==================
 parameter signed [5 -1:0] coef_1_3 = 5'b01101;
-parameter signed [7 -1:0] coef_2_1 = ;
-parameter signed [8 -1:0] coef_2_2 = ;
-parameter signed [8 -1:0] coef_2_3 = 8'b00110100;
+parameter signed [6 -1:0] coef_2_1 = 6'b101000;
+parameter signed [7 -1:0] coef_2_2 = 7'b1001100;
+parameter signed [8 -1:0] coef_2_3 = 8'b01001100;
 parameter signed [8 -1:0] coef_3_1 = 8'b01001000;
 parameter signed [8 -1:0] coef_3_2 = 8'b11000000;
 parameter signed [5 -1:0] coef_3_3 = 5'b11000;
-parameter signed [9 -1:0] divisor  = 9'b010100101;
+parameter signed [9 -1:0] divisor_pos  = 9'b010100101;
+parameter signed [9 -1:0] divisor_neg  = 9'b101011011;
 
 wire signed [`RGB2YUV_BW -1:0] y_r_g_nxt;
 wire signed [`RGB2YUV_BW -1:0] y_b_nxt;
-wire signed [`RGB2YUV_BW -1:0] y_aft; // aft: after diverse
 wire signed [`RGB2YUV_BW -1:0] y_nxt;
 wire signed [`RGB2YUV_BW -1:0] u_r_g_nxt;
 wire signed [`RGB2YUV_BW -1:0] u_b_nxt;
 wire signed [`RGB2YUV_BW -1:0] u_nxt;
 wire signed [`RGB2YUV_BW -1:0] v_nxt;
-wire [`BW -1:0] y1_out;
-wire [`BW -1:0] u_out;
-wire [`BW -1:0] v_out;
-wire [`BW -1:0] y2_out;
+wire signed [9 -1:0] divisor;
 
-reg signed [`RGB2YUV_BW -1:0] y1_reg;
-reg signed [`RGB2YUV_BW -1:0] y_r_g_reg;
-reg signed [`RGB2YUV_BW -1:0] u_reg;
-reg signed [`RGB2YUV_BW -1:0] v_reg;
-reg signed [`BW+1 -1:0] b_reg;
-reg signed [`RGB2YUV_BW -1:0] y2_reg;
-reg [2:0] cnt_rgb2yuv;
+reg signed [`RGB2YUV_BW -1:0] yuv_aft; // aft: after diverse
+reg signed [`RGB2YUV_BW -1:0] yuv_reg;
+reg [1:0] cnt_rgb2yuv;
 reg out_valid_reg_2;
+reg busy_reg_2;
+reg [23:0] rgb_in_reg;
+reg [`RGB2YUV_BW -1:0] u_r_g_reg;
 
-assign y_r_g_nxt = coef_1_1 * $signed({1'b0, rgb_in[23 :16]}) + coef_1_2 * $signed({1'b0, rgb_in[15 :8]});
-assign y_b_nxt = coef_1_3 * $signed({1'b0, rgb_in[7 :0]});
-assign y_after_div = (y_r_g_nxt + y_b_nxt)<<<1;
-assign y_nxt = (y_after_div + divisor) / (divisor<<<1);
-assign u_r_g_nxt = -(y_r_g_reg>>>1);
-assign u_b_nxt = coef_2_3 * b_reg;
-assign u_nxt = ((u_r_g_nxt + u_b_nxt)<<<1 + divisor) / (divisor<<<1);
-assign v_nxt = ( (coef_3_1 * $signed({1'b0, rgb_in[23 :16]}) + coef_3_2 * $signed({1'b0, rgb_in[15 :8]}))<<<1 + ((coef_3_3 * $signed({1'b0, rgb_in[7 :0]}))<<<1 + divisor) ) / (divisor<<<1);
-assign yuv_out = y1_reg;
+assign y_r_g_nxt = -(u_r_g_reg<<<1);
+assign y_b_nxt = coef_1_3 * $signed({1'b0, rgb_in_reg[7 :0]});
+assign y_nxt = (y_r_g_nxt + y_b_nxt)<<<1;
+assign u_r_g_nxt = coef_2_1 * $signed({1'b0, rgb_in[23 :16]}) + coef_2_2 * $signed({1'b0, rgb_in[15 :8]});
+assign u_b_nxt = coef_2_3 * $signed({1'b0, rgb_in[7 :0]});
+assign u_nxt = (u_r_g_nxt + u_b_nxt)<<<1;
+assign v_nxt = ((coef_3_1 * $signed({1'b0, rgb_in_reg[23 :16]}) + coef_3_2 * $signed({1'b0, rgb_in_reg[15 :8]})) + coef_3_3 * $signed({1'b0, rgb_in_reg[7 :0]}))<<<1;
 
+assign divisor = (yuv_aft[`RGB2YUV_BW -1]) ? divisor_neg : divisor_pos;
+assign yuv_out = (yuv_aft + divisor) / (divisor_pos<<<1);
 assign out_valid = out_valid_reg || out_valid_reg_2;
+assign busy = busy_reg || busy_reg_2;
 
 always @(posedge clk or posedge reset) begin
     if (reset) begin
-        y1_reg <= 0;
-        y_r_g_reg <= 0;
-        u_reg <= 0;
-        v_reg <= 0;
-        b_reg <= 0;
-        y2_reg <= 0;
         cnt_rgb2yuv <= 0;
+        yuv_aft <= 0;
+        busy_reg_2 <= 0;
         out_valid_reg_2 <= 0;
+        rgb_in_reg <= 0;
     end
-    else if (op_mode && in_en && ~cnt_rgb2yuv) begin
-        y_r_g_reg <= y_r_g_nxt;
-        y1_reg <= y_nxt;
-        v_reg <= v_nxt;
-        b_reg <= {1'b0, rgb_in[7 :0]};
-        cnt_rgb2yuv <= 1'b1;
-        out_valid_reg_2 <= 1'b0;
+    else if (op_mode && in_en && cnt_rgb2yuv == 2'b00) begin
+        rgb_in_reg <= rgb_in;
+        yuv_aft <= u_nxt;
+        u_r_g_reg <= u_r_g_nxt;
+        cnt_rgb2yuv <= cnt_rgb2yuv + 1;
+        out_valid_reg_2 <= 1;
+        busy_reg_2 <= 1;
     end
-    else if (op_mode && in_en && cnt_rgb2yuv) begin
-        y2_reg <= y_nxt;
-        u_reg <= u_nxt;
-        cnt_rgb2yuv <= 1'b0;
-        out_valid_reg_2 <= 1'b1;
+    else if (op_mode && in_en && cnt_rgb2yuv == 2'b01) begin
+        yuv_aft <= y_nxt;
+        cnt_rgb2yuv <= cnt_rgb2yuv + 1;
+        busy_reg_2 <= 0;
+    end
+    else if (op_mode && in_en && cnt_rgb2yuv == 2'b10) begin
+        rgb_in_reg <= rgb_in;
+        u_r_g_reg <= u_r_g_nxt;
+        yuv_aft <= v_nxt;
+        cnt_rgb2yuv <= cnt_rgb2yuv + 1;
+        busy_reg_2 <= 1;
+    end
+    else if (op_mode && in_en && cnt_rgb2yuv == 2'b11) begin
+        yuv_aft <= y_nxt;
+        cnt_rgb2yuv <= cnt_rgb2yuv + 1;
+        busy_reg_2 <= 0;
     end
 end
 
 endmodule
 
-module round_bound_YUV2RGB (x, out_x);
+module round_bound (x, out_x);
 input signed [`YUV2RGB_BW -1:0] x;
 output [`BW -1:0] out_x;
 
 wire [`YUV2RGB_BW-`YUV2RGBSHIFT_BW -1:0] x_shift;
 wire [`YUV2RGB_BW-`YUV2RGBSHIFT_BW -1:0] rounded_x;
-wire carry_bit;
-wire sign;
-wire upperbound;
-
-assign x_shift = x>>>`YUV2RGBSHIFT_BW;
-assign carry_bit = x[`YUV2RGBSHIFT_BW -1];
-assign rounded_x = x_shift + carry_bit;
-assign upperbound = rounded_x[9 - 1]; // check if rounded_x is >255. The reson why don't use x is x might be 255 and carrybit might be 1.
-assign sign = rounded_x[`YUV2RGB_BW-`YUV2RGBSHIFT_BW -1];
-assign out_x = (sign) ? `BW'b00000000 : 
-                (upperbound) ? `BW'b11111111 : rounded_x;
-    
-endmodule
-
-module round_bound_RGB2YUV (x, out_x);
-input signed [`RGB2YUV_BW -1:0] x;
-output [`BW -1:0] out_x;
-
-wire [`RGB2YUV_BW-`YUV2RGBSHIFT_BW -1:0] x_shift;
-wire [`RGB2YUV_BW-`YUV2RGBSHIFT_BW -1:0] rounded_x;
 wire carry_bit;
 wire sign;
 wire upperbound;

@@ -30,11 +30,10 @@ integer       i, j, k, distance, out_f, exp_num;
 integer       total, error;
 real          x, y, total_error;
 reg           over;
-wire signed [19 -1:0] y_nxt;
 
    CTE CTE( .clk(clk), .reset(reset), .op_mode(op_mode), .in_en(in_en),
             .yuv_in(yuv_in), .rgb_in(rgb_in), .busy(busy), .out_valid(out_valid),
-            .rgb_out(rgb_out), .yuv_out(yuv_out), .y_nxt(y_nxt)); 
+            .rgb_out(rgb_out), .yuv_out(yuv_out)); 
 
 
 `ifdef SDF
