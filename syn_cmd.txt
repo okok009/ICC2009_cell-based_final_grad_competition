@@ -1,0 +1,138 @@
+<adfp>
+
+read_file ../CTE_ori.v
+source CTE_ADFP_10.sdc
+compile_ultra
+report_area -hierarchy > ./ori/part1/area_ultra_10.log
+report_power > ./ori/part1/power_ultra_10.log
+define_name_rules name_rule -case_insensitive 
+change_names -hierarchy -rules name_rule
+change_names -hierarchy -rules verilog
+write -format ddc -hierarchy -output ./ori/part1/CTE_syn_ultra_10.ddc
+write_sdf -version 2.1 ./ori/part1/CTE_syn_ultra_10.sdf
+write -format verilog -hierarchy -output ./ori/part1/CTE_syn_ultra_10.v
+remove_design -designs 
+
+read_file ../CTE_ori.v
+source CTE_ADFP_8.sdc
+compile_ultra
+report_area -hierarchy > ./ori/part1/area_ultra_8.log
+report_power > ./ori/part1/power_ultra_8.log
+define_name_rules name_rule -case_insensitive 
+change_names -hierarchy -rules name_rule
+change_names -hierarchy -rules verilog
+write -format ddc -hierarchy -output ./ori/part1/CTE_syn_ultra_8.ddc
+write_sdf -version 2.1 ./ori/part1/CTE_syn_ultra_8.sdf
+write -format verilog -hierarchy -output ./ori/part1/CTE_syn_ultra_8.v
+remove_design -designs 
+
+read_file ../CTE_ori.v
+source CTE_ADFP_6.sdc
+compile_ultra
+report_area -hierarchy > ./ori/part1/area_ultra_6.log
+report_power > ./ori/part1/power_ultra_6.log
+define_name_rules name_rule -case_insensitive 
+change_names -hierarchy -rules name_rule
+change_names -hierarchy -rules verilog
+write -format ddc -hierarchy -output ./ori/part1/CTE_syn_ultra_6.ddc
+write_sdf -version 2.1 ./ori/part1/CTE_syn_ultra_6.sdf
+write -format verilog -hierarchy -output ./ori/part1/CTE_syn_ultra_6.v
+remove_design -designs 
+
+read_file ../CTE_ori.v
+source CTE_ADFP_4.sdc
+compile_ultra
+report_area -hierarchy > ./ori/part1/area_ultra_4.log
+report_power > ./ori/part1/power_ultra_4.log
+define_name_rules name_rule -case_insensitive 
+change_names -hierarchy -rules name_rule
+change_names -hierarchy -rules verilog
+write -format ddc -hierarchy -output ./ori/part1/CTE_syn_ultra_4.ddc
+write_sdf -version 2.1 ./ori/part1/CTE_syn_ultra_4.sdf
+write -format verilog -hierarchy -output ./ori/part1/CTE_syn_ultra_4.v
+remove_design -designs 
+
+-----------
+<tsmc>
+
+read_file ../CTE_ori.v
+source CTE_30.sdc
+compile_ultra
+report_area -hierarchy > ./ori/part1/area_ultra_30.log
+report_power > ./ori/part1/power_ultra_30.log
+define_name_rules name_rule -case_insensitive 
+change_names -hierarchy -rules name_rule
+change_names -hierarchy -rules verilog
+write -format ddc -hierarchy -output ./ori/part1/CTE_syn_ultra_30.ddc
+write_sdf -version 2.1 ./ori/part1/CTE_syn_ultra_30.sdf
+write -format verilog -hierarchy -output ./ori/part1/CTE_syn_ultra_30.v
+remove_design -designs 
+
+read_file ../CTE_ori.v
+source CTE_20.sdc
+compile_ultra
+report_area -hierarchy > ./ori/part1/area_ultra_20.log
+report_power > ./ori/part1/power_ultra_20.log
+define_name_rules name_rule -case_insensitive 
+change_names -hierarchy -rules name_rule
+change_names -hierarchy -rules verilog
+write -format ddc -hierarchy -output ./ori/part1/CTE_syn_ultra_20.ddc
+write_sdf -version 2.1 ./ori/part1/CTE_syn_ultra_20.sdf
+write -format verilog -hierarchy -output ./ori/part1/CTE_syn_ultra_20.v
+remove_design -designs 
+
+read_file ../CTE_ori.v
+source CTE_15.sdc
+compile_ultra
+report_area -hierarchy > ./ori/part1/area_ultra_15.log
+report_power > ./ori/part1/power_ultra_15.log
+define_name_rules name_rule -case_insensitive 
+change_names -hierarchy -rules name_rule
+change_names -hierarchy -rules verilog
+write -format ddc -hierarchy -output ./ori/part1/CTE_syn_ultra_15.ddc
+write_sdf -version 2.1 ./ori/part1/CTE_syn_ultra_15.sdf
+write -format verilog -hierarchy -output ./ori/part1/CTE_syn_ultra_15.v
+remove_design -designs 
+
+read_file ../CTE_ori.v
+source CTE_10.sdc
+compile_ultra
+report_area -hierarchy > ./ori/part1/area_ultra_10.log
+report_power > ./ori/part1/power_ultra_10.log
+define_name_rules name_rule -case_insensitive 
+change_names -hierarchy -rules name_rule
+change_names -hierarchy -rules verilog
+write -format ddc -hierarchy -output ./ori/part1/CTE_syn_ultra_10.ddc
+write_sdf -version 2.1 ./ori/part1/CTE_syn_ultra_10.sdf
+write -format verilog -hierarchy -output ./ori/part1/CTE_syn_ultra_10.v
+remove_design -designs 
+
+
+<<simulation>>
+
+<130nm>
+ncverilog testfixture1_30.v ./ori/part1/CTE_syn_ultra_30.v -v tsmc13_neg.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture1_20.v ./ori/part1/CTE_syn_ultra_20.v -v tsmc13_neg.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture1_15.v ./ori/part1/CTE_syn_ultra_15.v -v tsmc13_neg.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture1_10.v ./ori/part1/CTE_syn_ultra_10.v -v tsmc13_neg.v +define+SDFORI_U +access+r -clean
+
+ncverilog testfixture2_30.v ./ori/part1/CTE_syn_ultra_30.v -v tsmc13_neg.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture2_20.v ./ori/part1/CTE_syn_ultra_20.v -v tsmc13_neg.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture2_15.v ./ori/part1/CTE_syn_ultra_15.v -v tsmc13_neg.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture2_10.v ./ori/part1/CTE_syn_ultra_10.v -v tsmc13_neg.v +define+SDFORI_U +access+r -clean
+
+<adfp>
+ncverilog testfixture1_10.v ./ori/part1/CTE_syn_ultra_10.v -v N16ADFP_StdCell.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture1_8.v ./ori/part1/CTE_syn_ultra_8.v -v N16ADFP_StdCell.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture1_6.v ./ori/part1/CTE_syn_ultra_6.v -v N16ADFP_StdCell.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture1_4.v ./ori/part1/CTE_syn_ultra_4.v -v N16ADFP_StdCell.v +define+SDFORI_U +access+r -clean
+
+ncverilog testfixture2_10.v ./ori/part1/CTE_syn_ultra_10.v -v N16ADFP_StdCell.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture2_8.v ./ori/part1/CTE_syn_ultra_8.v -v N16ADFP_StdCell.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture2_6.v ./ori/part1/CTE_syn_ultra_6.v -v N16ADFP_StdCell.v +define+SDFORI_U +access+r -clean
+ncverilog testfixture2_4.v ./ori/part1/CTE_syn_ultra_4.v -v N16ADFP_StdCell.v +define+SDFORI_U +access+r -clean
+
+
+
+
+

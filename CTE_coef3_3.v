@@ -107,9 +107,8 @@ parameter signed [7 -1:0] coef_2_2 = 7'b1001100;
 parameter signed [8 -1:0] coef_2_3 = 8'b01001100;
 parameter signed [8 -1:0] coef_3_1 = 8'b01001000;
 parameter signed [5 -1:0] coef_3_3 = 5'b11000;
-parameter signed [10 -1:0] divisor_pos  = 10'b0111101111; // 495
-parameter signed [10 -1:0] divisor_neg  = 10'b1000010001; // -495
-parameter signed [4 -1:0] zoom = 4'b0110; // 6
+parameter signed [9 -1:0] divisor_pos  = 9'b010100101; // 165
+parameter signed [9 -1:0] divisor_neg  = 9'b101011011; // 165
 
 wire signed [`BW -1:0] yuv_out_nxt;
 wire signed [`RGB2YUV_BW -1:0] y_r_g_nxt;
@@ -119,7 +118,7 @@ wire signed [`RGB2YUV_BW -1:0] u_r_g_nxt;
 wire signed [`RGB2YUV_BW -1:0] u_b_nxt;
 wire signed [`RGB2YUV_BW -1:0] u_nxt;
 wire signed [`RGB2YUV_BW -1:0] v_nxt;
-wire signed [10 -1:0] divisor;
+wire signed [9 -1:0] divisor;
 wire signed [`RGB2YUV_BW -1:0] yuv_aft; // aft: after diverse
 
 reg signed [`BW -1:0] yuv_out_reg;
@@ -131,17 +130,17 @@ reg [`RGB2YUV_BW -1:0] u_r_g_reg;
 
 assign y_r_g_nxt = -(u_r_g_reg<<<1);
 assign y_b_nxt = coef_1_3 * $signed({1'b0, rgb_in_reg[7 :0]});
-assign y_nxt = (y_r_g_nxt + y_b_nxt);
+assign y_nxt = (y_r_g_nxt + y_b_nxt)<<<1;
 assign u_r_g_nxt = coef_2_1 * $signed({1'b0, rgb_in[23 :16]}) + coef_2_2 * $signed({1'b0, rgb_in[15 :8]});
 assign u_b_nxt = coef_2_3 * $signed({1'b0, rgb_in[7 :0]});
-assign u_nxt = (u_r_g_nxt + u_b_nxt);
+assign u_nxt = (u_r_g_nxt + u_b_nxt)<<<1;
 assign v_nxt = ((coef_3_1 * $signed({1'b0, rgb_in_reg[23 :16]}) + (coef_3_3 * $signed({1'b0, rgb_in_reg[15 :8]})<<<3)) + coef_3_3 * $signed({1'b0, rgb_in_reg[7 :0]}));
 assign yuv_aft = (cnt_rgb2yuv == 2'b00) ? u_nxt :
                  (cnt_rgb2yuv == 2'b01) ? y_nxt :
                  (cnt_rgb2yuv == 2'b10) ? v_nxt :
                  (cnt_rgb2yuv == 2'b11) ? y_nxt : `RGB2YUV_BW'bx;
 assign divisor = (yuv_aft[`RGB2YUV_BW -1]) ? divisor_neg : divisor_pos;
-assign yuv_out_nxt = (yuv_aft*zoom + divisor)>>>10;
+assign yuv_out_nxt = (yuv_aft + divisor) / (divisor_pos<<<1);
 assign yuv_out = yuv_out_reg;
 assign out_valid = out_valid_reg || out_valid_reg_2;
 assign busy = busy_reg || busy_reg_2;
