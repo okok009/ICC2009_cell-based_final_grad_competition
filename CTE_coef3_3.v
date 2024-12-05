@@ -106,6 +106,7 @@ parameter signed [6 -1:0] coef_2_1 = 6'b101000;
 parameter signed [7 -1:0] coef_2_2 = 7'b1001100;
 parameter signed [8 -1:0] coef_2_3 = 8'b01001100;
 parameter signed [8 -1:0] coef_3_1 = 8'b01001000;
+parameter signed [8 -1:0] coef_3_2 = 8'b11000000;
 parameter signed [5 -1:0] coef_3_3 = 5'b11000;
 parameter signed [9 -1:0] divisor_pos  = 9'b010100101; // 165
 parameter signed [9 -1:0] divisor_neg  = 9'b101011011; // 165
@@ -134,7 +135,7 @@ assign y_nxt = (y_r_g_nxt + y_b_nxt)<<<1;
 assign u_r_g_nxt = coef_2_1 * $signed({1'b0, rgb_in[23 :16]}) + coef_2_2 * $signed({1'b0, rgb_in[15 :8]});
 assign u_b_nxt = coef_2_3 * $signed({1'b0, rgb_in[7 :0]});
 assign u_nxt = (u_r_g_nxt + u_b_nxt)<<<1;
-assign v_nxt = ((coef_3_1 * $signed({1'b0, rgb_in_reg[23 :16]}) + (coef_3_3 * $signed({1'b0, rgb_in_reg[15 :8]})<<<3)) + coef_3_3 * $signed({1'b0, rgb_in_reg[7 :0]}));
+assign v_nxt = ((coef_3_1 * $signed({1'b0, rgb_in_reg[23 :16]}) + (coef_3_3 * $signed({1'b0, rgb_in_reg[15 :8]})<<<3)) + coef_3_3 * $signed({1'b0, rgb_in_reg[7 :0]}))<<<1;
 assign yuv_aft = (cnt_rgb2yuv == 2'b00) ? u_nxt :
                  (cnt_rgb2yuv == 2'b01) ? y_nxt :
                  (cnt_rgb2yuv == 2'b10) ? v_nxt :

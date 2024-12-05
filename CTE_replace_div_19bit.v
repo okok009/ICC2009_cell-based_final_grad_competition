@@ -3,6 +3,7 @@
 `define YUV2RGB_COE_BW 5
 `define YUV2RGBSHIFT_BW 3
 `define RGB2YUV_BW 18 // in(8bit+1bit)+max_coe(8bit)+2adder(2bit), min: 18
+`define ZOOM_BW 12
 
 `timescale 1ns/10ps
 module CTE ( clk, reset, op_mode, in_en, yuv_in, rgb_in, busy, out_valid, rgb_out, yuv_out);
@@ -108,9 +109,10 @@ parameter signed [8 -1:0] coef_2_3 = 8'b01001100;
 parameter signed [8 -1:0] coef_3_1 = 8'b01001000;
 parameter signed [8 -1:0] coef_3_2 = 8'b11000000;
 parameter signed [5 -1:0] coef_3_3 = 5'b11000;
-parameter signed [9 -1:0] divisor_pos  = 9'b010100101; // 165
-parameter signed [9 -1:0] divisor_neg  = 9'b101011011; // -165
-
+parameter signed [9 -1:0] divisor_pos  = 9'b010100111; // Try and Error
+parameter signed [9 -1:0] divisor_neg  = 9'b010000000; // Try and Error
+parameter signed [`ZOOM_BW -1:0] zoom = `ZOOM_BW'b011000110101; // 1589
+wire signed [`RGB2YUV_BW+`ZOOM_BW -1:0] yuv_out_up;
 wire signed [`BW -1:0] yuv_out_nxt;
 wire signed [`RGB2YUV_BW -1:0] y_r_g_nxt;
 wire signed [`RGB2YUV_BW -1:0] y_b_nxt;
@@ -131,17 +133,18 @@ reg [`RGB2YUV_BW -1:0] u_r_g_reg;
 
 assign y_r_g_nxt = -(u_r_g_reg<<<1);
 assign y_b_nxt = coef_1_3 * $signed({1'b0, rgb_in_reg[7 :0]});
-assign y_nxt = (y_r_g_nxt + y_b_nxt)<<<1;
+assign y_nxt = (y_r_g_nxt + y_b_nxt);
 assign u_r_g_nxt = coef_2_1 * $signed({1'b0, rgb_in[23 :16]}) + coef_2_2 * $signed({1'b0, rgb_in[15 :8]});
 assign u_b_nxt = coef_2_3 * $signed({1'b0, rgb_in[7 :0]});
-assign u_nxt = (u_r_g_nxt + u_b_nxt)<<<1;
-assign v_nxt = ((coef_3_1 * $signed({1'b0, rgb_in_reg[23 :16]}) + coef_3_2 * $signed({1'b0, rgb_in_reg[15 :8]})) + coef_3_3 * $signed({1'b0, rgb_in_reg[7 :0]}))<<<1;
+assign u_nxt = (u_r_g_nxt + u_b_nxt);
+assign v_nxt = ((coef_3_1 * $signed({1'b0, rgb_in_reg[23 :16]}) + (coef_3_3 * $signed({1'b0, rgb_in_reg[15 :8]})<<<3)) + coef_3_3 * $signed({1'b0, rgb_in_reg[7 :0]}));
 assign yuv_aft = (cnt_rgb2yuv == 2'b00) ? u_nxt :
                  (cnt_rgb2yuv == 2'b01) ? y_nxt :
                  (cnt_rgb2yuv == 2'b10) ? v_nxt :
                  (cnt_rgb2yuv == 2'b11) ? y_nxt : `RGB2YUV_BW'bx;
 assign divisor = (yuv_aft[`RGB2YUV_BW -1]) ? divisor_neg : divisor_pos;
-assign yuv_out_nxt = (yuv_aft + divisor) / (divisor_pos<<<1);
+assign yuv_out_up = ((yuv_aft<<<1) + divisor)*zoom;
+assign yuv_out_nxt = (yuv_out_up)>>>19;
 assign yuv_out = yuv_out_reg;
 assign out_valid = out_valid_reg || out_valid_reg_2;
 assign busy = busy_reg || busy_reg_2;
